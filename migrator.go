@@ -216,6 +216,7 @@ func (m Migrator) DropColumn(value interface{}, name string) error {
 }
 
 func (m Migrator) AlterColumn(value interface{}, field string) error {
+	return nil
 	clusterOpts := m.getClusterOpts()
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
 		if field := stmt.Schema.LookUpField(field); field != nil {
@@ -233,6 +234,7 @@ func (m Migrator) AlterColumn(value interface{}, field string) error {
 // NOTE: Only supported after ClickHouse 20.4 and above.
 // See: https://github.com/ClickHouse/ClickHouse/issues/146
 func (m Migrator) RenameColumn(value interface{}, oldName, newName string) error {
+	return nil
 	clusterOpts := m.getClusterOpts()
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
 		if !m.Dialector.DontSupportRenameColumn {
@@ -283,18 +285,18 @@ func (m Migrator) HasColumn(value interface{}, field string) bool {
 // Indexes
 
 func (m Migrator) BuildIndexOptions(opts []schema.IndexOption, stmt *gorm.Statement) (results []interface{}) {
+	for _, indexOpt := range opts {
+		str := stmt.Quote(indexOpt.DBName)
+		if indexOpt.Expression != "" {
+			str = indexOpt.Expression
+		}
+		results = append(results, clause.Expr{SQL: str})
+	}
 	return
-	//for _, indexOpt := range opts {
-	//	str := stmt.Quote(indexOpt.DBName)
-	//	if indexOpt.Expression != "" {
-	//		str = indexOpt.Expression
-	//	}
-	//	results = append(results, clause.Expr{SQL: str})
-	//}
-	//return
 }
 
 func (m Migrator) CreateIndex(value interface{}, name string) error {
+	return nil
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
 		if index := stmt.Schema.LookIndex(name); index != nil {
 			opts := m.BuildIndexOptions(index.Fields, stmt)
@@ -315,6 +317,7 @@ func (m Migrator) CreateIndex(value interface{}, name string) error {
 			// is NOT supported in clickhouse
 			createIndexSQL := "ALTER TABLE ? ADD INDEX ? ? TYPE %s GRANULARITY %d"                             // TODO(iqdf): how to inject Granularity
 			createIndexSQL = fmt.Sprintf(createIndexSQL, indexType, m.getIndexGranularityOption(index.Fields)) // Granularity: 1 (default)
+			
 			return m.DB.Exec(createIndexSQL, values...).Error
 		}
 		return ErrCreateIndexFailed
@@ -329,6 +332,7 @@ func (m Migrator) RenameIndex(value interface{}, oldName, newName string) error 
 }
 
 func (m Migrator) DropIndex(value interface{}, name string) error {
+	return nil
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
 		if stmt.Schema != nil {
 			if idx := stmt.Schema.LookIndex(name); idx != nil {
