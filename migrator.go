@@ -161,7 +161,8 @@ func (m Migrator) CreateTable(models ...interface{}) error {
 				clusterOpts = " " + fmt.Sprint(clusterOption) + " "
 			}
 
-			createTableSQL = fmt.Sprintf(createTableSQL, clusterOpts, columnStr, constrStr, indexStr, engineOpts)
+			//createTableSQL = fmt.Sprintf(createTableSQL, clusterOpts, columnStr, constrStr, indexStr, engineOpts)
+			createTableSQL = fmt.Sprintf(createTableSQL, clusterOpts, columnStr, constrStr, "", engineOpts)
 
 			err = tx.Exec(createTableSQL, args...).Error
 
