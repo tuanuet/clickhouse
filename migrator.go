@@ -189,10 +189,11 @@ func (m Migrator) HasTable(value interface{}) bool {
 // Columns
 
 func (m Migrator) AddColumn(value interface{}, field string) error {
+	clusterOpts := m.getClusterOpts()
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
 		if field := stmt.Schema.LookUpField(field); field != nil {
 			return m.DB.Exec(
-				"ALTER TABLE ? ADD COLUMN ? ?",
+				fmt.Sprintf("ALTER TABLE ? %s ADD COLUMN ? ?",clusterOpts),
 				clause.Table{Name: stmt.Table}, clause.Column{Name: field.DBName},
 				m.FullDataTypeOf(field),
 			).Error
@@ -202,22 +203,24 @@ func (m Migrator) AddColumn(value interface{}, field string) error {
 }
 
 func (m Migrator) DropColumn(value interface{}, name string) error {
+	clusterOpts := m.getClusterOpts()
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
 		if field := stmt.Schema.LookUpField(name); field != nil {
 			name = field.DBName
 		}
 		return m.DB.Exec(
-			"ALTER TABLE ? DROP COLUMN ?",
+			fmt.Sprintf("ALTER TABLE ? %s DROP COLUMN ?", clusterOpts),
 			clause.Table{Name: stmt.Table}, clause.Column{Name: name},
 		).Error
 	})
 }
 
 func (m Migrator) AlterColumn(value interface{}, field string) error {
+	clusterOpts := m.getClusterOpts()
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
 		if field := stmt.Schema.LookUpField(field); field != nil {
 			return m.DB.Exec(
-				"ALTER TABLE ? MODIFY COLUMN ? ?",
+				fmt.Sprintf("ALTER TABLE ? %s MODIFY COLUMN ? ?", clusterOpts),
 				clause.Table{Name: stmt.Table},
 				clause.Column{Name: field.DBName},
 				m.FullDataTypeOf(field),
@@ -230,6 +233,7 @@ func (m Migrator) AlterColumn(value interface{}, field string) error {
 // NOTE: Only supported after ClickHouse 20.4 and above.
 // See: https://github.com/ClickHouse/ClickHouse/issues/146
 func (m Migrator) RenameColumn(value interface{}, oldName, newName string) error {
+	clusterOpts := m.getClusterOpts()
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
 		if !m.Dialector.DontSupportRenameColumn {
 			var field *schema.Field
@@ -243,7 +247,7 @@ func (m Migrator) RenameColumn(value interface{}, oldName, newName string) error
 			}
 			if field != nil {
 				return m.DB.Exec(
-					"ALTER TABLE ? RENAME COLUMN ? TO ?",
+					fmt.Sprintf("ALTER TABLE ? %s RENAME COLUMN ? TO ?", clusterOpts),
 					clause.Table{Name: stmt.Table},
 					clause.Column{Name: oldName},
 					clause.Column{Name: newName},
@@ -279,14 +283,15 @@ func (m Migrator) HasColumn(value interface{}, field string) bool {
 // Indexes
 
 func (m Migrator) BuildIndexOptions(opts []schema.IndexOption, stmt *gorm.Statement) (results []interface{}) {
-	for _, indexOpt := range opts {
-		str := stmt.Quote(indexOpt.DBName)
-		if indexOpt.Expression != "" {
-			str = indexOpt.Expression
-		}
-		results = append(results, clause.Expr{SQL: str})
-	}
 	return
+	//for _, indexOpt := range opts {
+	//	str := stmt.Quote(indexOpt.DBName)
+	//	if indexOpt.Expression != "" {
+	//		str = indexOpt.Expression
+	//	}
+	//	results = append(results, clause.Expr{SQL: str})
+	//}
+	//return
 }
 
 func (m Migrator) CreateIndex(value interface{}, name string) error {
@@ -367,4 +372,12 @@ func (m Migrator) getIndexGranularityOption(opts []schema.IndexOption) int {
 		}
 	}
 	return m.Dialector.DefaultGranularity
+}
+
+func (m Migrator) getClusterOpts() string {
+	clusterOpts := ""
+	if clusterOption, ok := m.DB.Get("gorm:table_cluster_options"); ok {
+		clusterOpts = " " + fmt.Sprint(clusterOption) + " "
+	}
+	return clusterOpts
 }
