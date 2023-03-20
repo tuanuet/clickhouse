@@ -3,9 +3,9 @@ module github.com/tuanuet/clickhouse
 go 1.14
 
 require (
-	github.com/ClickHouse/clickhouse-go v1.4.5
-	github.com/hashicorp/go-version v1.3.0
+	github.com/ClickHouse/ch-go v0.53.1 // indirect
+	github.com/ClickHouse/clickhouse-go/v2 v2.7.0 // indirect
+	github.com/hashicorp/go-version v1.6.0
+	golang.org/x/sys v0.6.0 // indirect
 	gorm.io/gorm v1.22.0
 )
-
-replace github.com/ClickHouse/clickhouse-go => github.com/go-gorm/clickhouse-go v1.4.5
